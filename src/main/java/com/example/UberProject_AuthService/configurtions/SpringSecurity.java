@@ -16,7 +16,7 @@ public class SpringSecurity {
         return http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("api/v1/auth/signup/passenger").permitAll()
-                        .requestMatchers("api/v1/auth/signin/").permitAll()
+                        .requestMatchers("api/v1/auth/signin/passenger").permitAll()
                 ).build();
 
     }
