@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Service
-public class JWTSecurity implements CommandLineRunner {
+public class JWTService implements CommandLineRunner {
 
     @Value("${jwt.secret}")
     private  String secret;
@@ -83,5 +83,9 @@ public class JWTSecurity implements CommandLineRunner {
     private Boolean validateToken(String email, String token){
         String userEmailFetchedFromToken = extractEmail(token);
         return (userEmailFetchedFromToken.equals(email) && !isTokenExpired(token));
+    }
+    private Object extractPayload(String token, String payloadKey){
+        Claims claim = extractAllPayload(token);
+        return  (Object)claim.get(payloadKey);
     }
 }
