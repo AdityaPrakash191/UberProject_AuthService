@@ -27,7 +27,7 @@ public class JWTService implements CommandLineRunner {
     @Value("${jwt.expiry}")
     private int expiry;
 
-    private String createToken(Map<String,Object> payload , String email){
+    public String createToken(Map<String,Object> payload , String email){
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiry*1000L);
 
@@ -41,6 +41,9 @@ public class JWTService implements CommandLineRunner {
                 .compact();
 
     }
+    public String createToken(String email){
+        return createToken(new HashMap<>(),email);
+    }
     @Override
     public void run(String... args) throws Exception{
         Map<String,Object> m = new HashMap<>();
@@ -51,7 +54,7 @@ public class JWTService implements CommandLineRunner {
 
     }
 
-    private Claims extractAllPayload(String token) {
+    public Claims extractAllPayload(String token) {
         return Jwts
                 .parser()
                 .verifyWith((getSignKey()))
@@ -59,7 +62,7 @@ public class JWTService implements CommandLineRunner {
                 .parseSignedClaims(token)
                 .getPayload();
     }
-    private SecretKey getSignKey() {
+    public SecretKey getSignKey() {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -68,23 +71,23 @@ public class JWTService implements CommandLineRunner {
         return claimsResolver.apply(claims);
     }
 
-    private Date extractExpiration(String token){
+    public Date extractExpiration(String token){
         return extractClaim(token,Claims::getExpiration);
     }
 
-    private Boolean isTokenExpired(String token){
+    public Boolean isTokenExpired(String token){
         return extractExpiration(token).before(new Date());
     }
 
-    private String extractEmail(String token){
+    public String extractEmail(String token){
         return extractClaim(token,Claims::getSubject);
     }
 
-    private Boolean validateToken(String email, String token){
+    public Boolean validateToken(String email, String token){
         String userEmailFetchedFromToken = extractEmail(token);
         return (userEmailFetchedFromToken.equals(email) && !isTokenExpired(token));
     }
-    private Object extractPayload(String token, String payloadKey){
+    public Object extractPayload(String token, String payloadKey){
         Claims claim = extractAllPayload(token);
         return  (Object)claim.get(payloadKey);
     }

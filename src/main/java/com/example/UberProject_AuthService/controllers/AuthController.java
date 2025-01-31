@@ -1,12 +1,18 @@
 package com.example.UberProject_AuthService.controllers;
 
 
+import com.example.UberProject_AuthService.dtos.AuthRequestDto;
 import com.example.UberProject_AuthService.dtos.PassengerDto;
 import com.example.UberProject_AuthService.dtos.PassengerSignupRequestDto;
 import com.example.UberProject_AuthService.services.AuthService;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
+
+import com.example.UberProject_AuthService.services.JWTService;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -14,10 +20,20 @@ import org.springframework.web.bind.annotation.*;
 
 public class AuthController {
 
-    private AuthService authService;
+    @Value("${cookie.expiry}")
+    private int cookieExpiry;
 
-    public AuthController(AuthService authService){
+    private final AuthService authService;
+
+    private final AuthenticationManager authenticationManager;
+
+    private final JWTService jwtService;
+
+    public AuthController(AuthService authService,AuthenticationManager authenticationManager,JWTService jwtService){
         this.authService = authService;
+        this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
+
     }
 
     @PostMapping("/signup/passenger")
@@ -25,8 +41,21 @@ public class AuthController {
         PassengerDto response = this.authService.signupPassenger(passengerSignupRequestDto);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
-    @GetMapping("/signin/passenger")
-    public ResponseEntity<?> signUp(){
-        return new ResponseEntity<>(10, HttpStatus.OK);
+    @PostMapping("/signin/passenger")
+    public ResponseEntity<?> signUp(@RequestBody AuthRequestDto requestDto, HttpServletResponse response){
+
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(requestDto.getEmail(),requestDto.getPassword()));
+        if(authentication.isAuthenticated()){
+            String token = jwtService.createToken(requestDto.getEmail());
+            ResponseCookie cookie = ResponseCookie.from("jwtToken",token)
+                    .httpOnly(true)
+                    .maxAge(cookieExpiry)
+                    .secure(false) //tells we are using http not https
+                    .build();
+            response.setHeader(HttpHeaders.SET_COOKIE,cookie.toString());
+            return new ResponseEntity<>(token,HttpStatus.OK);
+        }else{
+            return new ResponseEntity<>("Auth UnSuccessful",HttpStatus.OK);
+        }
     }
 }
